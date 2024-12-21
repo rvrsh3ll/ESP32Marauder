@@ -20,11 +20,21 @@ void Display::RunSetup()
   #endif
   
   tft.init();
-  tft.setRotation(0); // Portrait
+  #ifndef MARAUDER_M5STICKC
+    tft.setRotation(0); // Portrait
+  #endif
+
+  #ifdef MARAUDER_M5STICKC
+    tft.setRotation(1);
+  #endif
+
+  #ifdef MARAUDER_REV_FEATHER
+    tft.setRotation(1);
+  #endif
 
   tft.setCursor(0, 0);
 
-  #ifndef MARAUDER_MINI
+  #ifdef HAS_ILI9341
 
     #ifdef TFT_SHIELD
       uint16_t calData[5] = { 275, 3494, 361, 3528, 4 }; // tft.setRotation(0); // Portrait with TFT Shield
@@ -46,6 +56,14 @@ void Display::RunSetup()
 
   #ifdef KIT
     pinMode(KIT_LED_BUILTIN, OUTPUT);
+  #endif
+
+  #ifdef MARAUDER_REV_FEATHER
+    pinMode(7, OUTPUT);
+
+    delay(10);
+
+    digitalWrite(7, HIGH);
   #endif
 }
 
@@ -313,7 +331,7 @@ void Display::displayBuffer(bool do_clear)
 
 void Display::showCenterText(String text, int y)
 {
-  tft.setCursor((SCREEN_WIDTH - (text.length() * 6)) / 2, y);
+  tft.setCursor((SCREEN_WIDTH - (text.length() * (6 * BANNER_TEXT_SIZE))) / 2, y);
   tft.println(text);
 }
 
@@ -380,7 +398,7 @@ void Display::setupScrollArea(uint16_t tfa, uint16_t bfa) {
   //Serial.println("   tfa: " + (String)tfa);
   //Serial.println("   bfa: " + (String)bfa);
   //Serial.println("yStart: " + (String)this->yStart);
-  #ifndef MARAUDER_MINI
+  #ifdef HAS_ILI9341
     tft.writecommand(ILI9341_VSCRDEF); // Vertical scroll definition
     tft.writedata(tfa >> 8);           // Top Fixed Area line count
     tft.writedata(tfa);
@@ -393,7 +411,7 @@ void Display::setupScrollArea(uint16_t tfa, uint16_t bfa) {
 
 
 void Display::scrollAddress(uint16_t vsp) {
-  #ifndef MARAUDER_MINI
+  #ifdef HAS_ILI9341
     tft.writecommand(ILI9341_VSCRSADD); // Vertical scrolling pointer
     tft.writedata(vsp>>8);
     tft.writedata(vsp);
@@ -404,6 +422,7 @@ void Display::scrollAddress(uint16_t vsp) {
 
 
 // JPEG_functions
+/*
 void Display::drawJpeg(const char *filename, int xpos, int ypos) {
 
   // Open the named file (the Jpeg decoder library will close it after rendering image)
@@ -421,7 +440,7 @@ void Display::drawJpeg(const char *filename, int xpos, int ypos) {
   // the filename can be a String or character array type:
 
   //boolean decoded = JpegDec.decodeFsFile(filename);  // or pass the filename (leading / distinguishes SPIFFS files)
-  boolean decoded = JpegDec.decodeArray(MarauderTitle, 13578);
+  boolean decoded = JpegDec.decodeArray(MarauderTitle, MARAUDER_TITLE_BYTES);
 
   if (decoded) {
     // print information about the image to the serial port
@@ -434,14 +453,15 @@ void Display::drawJpeg(const char *filename, int xpos, int ypos) {
   //  Serial.println(F("Jpeg file format not supported!"));
   //}
 }
+*/
 
-void Display::setupDraw() {
+/*void Display::setupDraw() {
   this->tft.drawLine(0, 0, 10, 0, TFT_MAGENTA);
   this->tft.drawLine(0, 0, 0, 10, TFT_GREEN);
   this->tft.drawLine(0, 0, 0, 0, TFT_CYAN);
-}
+}*/
 
-uint16_t xlast;
+/*uint16_t xlast;
 uint16_t ylast;
 uint32_t AH;
 void Display::drawStylus()
@@ -507,7 +527,7 @@ void Display::drawStylus()
     xlast = 0;
     ylast = 0;
   }
-}
+}*/
 
 //====================================================================================
 //   Decode and render the Jpeg image onto the TFT screen
@@ -745,20 +765,20 @@ void Display::listDir(fs::FS &fs, const char * dirname, uint8_t levels) {
 
 void Display::updateBanner(String msg)
 {
-  this->img.deleteSprite();
+  //this->img.deleteSprite();
   
-  this->img.setColorDepth(8);
+  //this->img.setColorDepth(8);
 
-  this->img.createSprite(SCREEN_WIDTH, TEXT_HEIGHT);
+  //this->img.createSprite(SCREEN_WIDTH, TEXT_HEIGHT);
 
   this->buildBanner(msg, current_banner_pos);
 
-  this->img.pushSprite(0, STATUS_BAR_WIDTH);
+  //this->img.pushSprite(0, STATUS_BAR_WIDTH);
 
-  current_banner_pos--;
+  //current_banner_pos--;
 
-  if (current_banner_pos <= 0)
-    current_banner_pos = SCREEN_WIDTH + 2;
+  //if (current_banner_pos <= 0)
+  //  current_banner_pos = SCREEN_WIDTH + 2;
 }
 
 
@@ -766,6 +786,13 @@ void Display::buildBanner(String msg, int xpos)
 {
   int h = TEXT_HEIGHT;
 
+  this->tft.fillRect(0, STATUS_BAR_WIDTH, SCREEN_WIDTH, TEXT_HEIGHT, TFT_BLACK);
+  this->tft.setFreeFont(NULL);           // Font 4 selected
+  this->tft.setTextSize(BANNER_TEXT_SIZE);           // Font size scaling is x1
+  this->tft.setTextColor(TFT_WHITE, TFT_BLACK);  // Black text, no background colour
+  this->showCenterText(msg, STATUS_BAR_WIDTH);
+
+  /*
   // We could just use fillSprite(color) but lets be a bit more creative...
 
   // Fill with rainbow stripes
@@ -787,6 +814,7 @@ void Display::buildBanner(String msg, int xpos)
 
   img.setCursor(xpos - SCREEN_WIDTH, 2); // Print text at xpos - sprite width
   img.print(msg);
+  */
 }
 
 void Display::main(uint8_t scan_mode)
